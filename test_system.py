@@ -44,9 +44,14 @@ async def test_risk_manager_validation():
     
     risk_manager = RiskManager()
     
-    # Test valid transaction under limit
-    is_valid, reason = await risk_manager.validate_transaction(25.0, "Test transaction")
+    # Test valid transaction under 2FA threshold
+    is_valid, reason = await risk_manager.validate_transaction(15.0, "Test transaction")
     assert is_valid
+    
+    # Test transaction requiring 2FA (without approval)
+    is_valid, reason = await risk_manager.validate_transaction(25.0, "Requires 2FA")
+    assert not is_valid  # Should fail without 2FA approval
+    assert "2FA" in reason
     
     # Test invalid transaction over limit
     is_valid, reason = await risk_manager.validate_transaction(60.0, "Too large")
