@@ -2,6 +2,7 @@ import asyncio
 from dotenv import load_dotenv
 
 from core.risk import RiskManager
+from core.data_logger import DataLogger
 from agents.crypto_sniper import CryptoSniperAgent
 from agents.gas_monitor import GasSentinel
 
@@ -11,6 +12,7 @@ load_dotenv()
 class SentinelOrchestrator:
     def __init__(self):
         self.risk_manager = RiskManager()
+        self.logger = DataLogger()
         self.crypto_sniper = CryptoSniperAgent(symbol="LUNC")
         self.gas_watcher = GasSentinel()
 
@@ -21,6 +23,9 @@ class SentinelOrchestrator:
             try:
                 result = await self.crypto_sniper.execute()
 
+                self.logger.write_event("crypto_signals", result)
+                summary = self.logger.build_daily_summary()
+
                 snapshot = result["snapshot"]
                 decision = result["decision"]
 
@@ -30,6 +35,7 @@ class SentinelOrchestrator:
                 print(f"🎯 Strategy Score: {result['best_strategy_score']}")
                 print(f"⚡ Decision: {decision['decision']}")
                 print(f"📄 Paper Trades Logged: {result['paper_trade_count']}")
+                print(f"🗂️ Events Stored: {summary['events']}")
                 print("-----------------------------------------")
 
             except Exception as e:
@@ -41,6 +47,7 @@ class SentinelOrchestrator:
         print("--- 🎻 Sentinel-OS: Crypto Intelligence Online ---")
         print("💰 Paper trading mode only")
         print("🧠 Multi-signal strategy scoring enabled")
+        print("🗂️ Persistent signal logging enabled")
         print("📡 LUNC monitoring + Base gas monitoring active")
         print("------------------------------------------------")
 
