@@ -2,5 +2,7 @@ skyfire-sdk>=1.5.0
 solana==0.34.3
 solders==0.21.0
 pyTelegramBotAPI
+python-telegram-bot
 python-dotenv
+web3
 asyncio
