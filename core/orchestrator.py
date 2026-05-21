@@ -1,43 +1,49 @@
 import asyncio
-import os
-import sys
 from dotenv import load_dotenv
 
-# Import your specialized agents
 from core.risk import RiskManager
-from agents.gpu_sniper import GPUSniper
+from agents.gpu_sniper import GPUSniperAgent
 from agents.gas_monitor import GasSentinel
 
-# Load your .env secrets from Coinbase/Skyfire/Telegram
+# Load .env secrets before initializing agents
 load_dotenv()
+
 
 class SentinelOrchestrator:
     def __init__(self):
-        # Initialize the global safety net with your $2.00/day limit
-        self.risk_manager = RiskManager(daily_limit=2.0)
-        
-        # Initialize the worker agents
-        self.sniper = GPUSniper(self.risk_manager)
+        # Global safety net. Keep limits inside RiskManager for now.
+        self.risk_manager = RiskManager()
+        self.sniper = GPUSniperAgent()
         self.gas_watcher = GasSentinel()
+
+    async def sniper_loop(self):
+        """Run the GPU sniper continuously without crashing the whole bot."""
+        print("🎯 GPU Sniper: Starting opportunity scan loop...")
+        while True:
+            try:
+                result = await self.sniper.execute(wallet=None, risk_manager=self.risk_manager)
+                print(f"🎯 GPU Sniper result: {result}")
+            except Exception as e:
+                print(f"GPU Sniper Error: {e}")
+
+            await asyncio.sleep(60)
 
     async def start(self):
         print("--- 🎻 Sentinel-OS: Symphony Started ---")
-        print(f"💰 Budget Gauge: $10.00 | Safety Cap: $2.00/day")
-        print("📡 Network: Base (Layer 2) | Payment: Skyfire SDK")
+        print("💰 Safety: RiskManager transaction caps enabled")
+        print("📡 Network: Base monitoring enabled | GPU sniper loop enabled")
         print("-----------------------------------------")
 
         try:
-            # This is the 'Conductor' - it runs all loops in parallel
             await asyncio.gather(
-                self.sniper.run_forever(),    # Loop 1: Hunting VRAM gaps
-                self.gas_watcher.run(),       # Loop 2: Monitoring Base fees
+                self.sniper_loop(),
+                self.gas_watcher.run(),
             )
         except KeyboardInterrupt:
-            print("\n🛑 Conductor signaled shutdown. Closing loops safely...")
+            print("\n🛑 Shutdown requested. Closing loops safely...")
         except Exception as e:
             print(f"❌ CRITICAL CLUSTER ERROR: {e}")
-            # In 2026, an unhandled error triggers an emergency Telegram ping
-            self.risk_manager.alert(f"Cluster Crash: {e}")
+
 
 if __name__ == "__main__":
     orchestrator = SentinelOrchestrator()
