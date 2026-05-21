@@ -2,41 +2,51 @@ import asyncio
 from dotenv import load_dotenv
 
 from core.risk import RiskManager
-from agents.gpu_sniper import GPUSniperAgent
+from agents.crypto_sniper import CryptoSniperAgent
 from agents.gas_monitor import GasSentinel
 
-# Load .env secrets before initializing agents
 load_dotenv()
 
 
 class SentinelOrchestrator:
     def __init__(self):
-        # Global safety net. Keep limits inside RiskManager for now.
         self.risk_manager = RiskManager()
-        self.sniper = GPUSniperAgent()
+        self.crypto_sniper = CryptoSniperAgent(symbol="LUNC")
         self.gas_watcher = GasSentinel()
 
-    async def sniper_loop(self):
-        """Run the GPU sniper continuously without crashing the whole bot."""
-        print("🎯 GPU Sniper: Starting opportunity scan loop...")
+    async def crypto_loop(self):
+        print("🧠 Crypto Sniper: Multi-signal LUNC watcher online...")
+
         while True:
             try:
-                result = await self.sniper.execute(wallet=None, risk_manager=self.risk_manager)
-                print(f"🎯 GPU Sniper result: {result}")
+                result = await self.crypto_sniper.execute()
+
+                snapshot = result["snapshot"]
+                decision = result["decision"]
+
+                print("-----------------------------------------")
+                print(f"📈 {snapshot['symbol']} | Price: {snapshot['price']:.8f}")
+                print(f"🧠 Best Strategy: {result['best_strategy_now']}")
+                print(f"🎯 Strategy Score: {result['best_strategy_score']}")
+                print(f"⚡ Decision: {decision['decision']}")
+                print(f"📄 Paper Trades Logged: {result['paper_trade_count']}")
+                print("-----------------------------------------")
+
             except Exception as e:
-                print(f"GPU Sniper Error: {e}")
+                print(f"Crypto Sniper Error: {e}")
 
             await asyncio.sleep(60)
 
     async def start(self):
-        print("--- 🎻 Sentinel-OS: Symphony Started ---")
-        print("💰 Safety: RiskManager transaction caps enabled")
-        print("📡 Network: Base monitoring enabled | GPU sniper loop enabled")
-        print("-----------------------------------------")
+        print("--- 🎻 Sentinel-OS: Crypto Intelligence Online ---")
+        print("💰 Paper trading mode only")
+        print("🧠 Multi-signal strategy scoring enabled")
+        print("📡 LUNC monitoring + Base gas monitoring active")
+        print("------------------------------------------------")
 
         try:
             await asyncio.gather(
-                self.sniper_loop(),
+                self.crypto_loop(),
                 self.gas_watcher.run(),
             )
         except KeyboardInterrupt:
