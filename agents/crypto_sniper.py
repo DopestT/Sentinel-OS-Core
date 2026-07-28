@@ -21,6 +21,11 @@ class MarketSnapshot:
     rsi: float
     ma_fast: float
     ma_slow: float
+    bb_lower: float
+    bb_middle: float
+    bb_upper: float
+    atr: float
+    solana_alpha_signal: str
     volatility_score: float
     sentiment_score: float
     whale_risk_score: float
@@ -45,6 +50,7 @@ class CryptoSniperAgent:
             "dip_buy": [],
             "volume_spike": [],
             "btc_follow": [],
+            "solana_alpha": [],
             "no_trade": [],
         }
 
@@ -65,6 +71,14 @@ class CryptoSniperAgent:
         ma_slow = self._moving_average(21)
         rsi = self._estimate_rsi()
         volatility = self._estimate_volatility()
+        bb_lower, bb_middle, bb_upper = self._bollinger_bands()
+        atr = self._estimate_atr()
+        solana_alpha_signal = self._solana_alpha_signal(
+            price=price,
+            rsi=rsi,
+            bb_lower=bb_lower,
+            bb_upper=bb_upper,
+        )
 
         return MarketSnapshot(
             symbol=self.symbol,
@@ -74,6 +88,11 @@ class CryptoSniperAgent:
             rsi=rsi,
             ma_fast=ma_fast,
             ma_slow=ma_slow,
+            bb_lower=bb_lower,
+            bb_middle=bb_middle,
+            bb_upper=bb_upper,
+            atr=atr,
+            solana_alpha_signal=solana_alpha_signal,
             volatility_score=volatility,
             sentiment_score=random.uniform(35, 75),
             whale_risk_score=random.uniform(10, 85),
@@ -138,7 +157,24 @@ class CryptoSniperAgent:
             "btc_follow",
             self._clamp(btc_score),
             self._signal(btc_score),
-            "Checks whether LUNC should follow broader Bitcoin market direction.",
+            "Checks whether the configured asset should follow Bitcoin direction.",
+        ))
+
+        alpha_scores = {
+            "enter_long": 85,
+            "hold": 45,
+            "exit_long": 15,
+            "warmup": 20,
+        }
+        alpha_score = alpha_scores[snapshot.solana_alpha_signal]
+        scores.append(StrategyScore(
+            "solana_alpha",
+            self._clamp(alpha_score),
+            self._signal(alpha_score),
+            (
+                "RSI/Bollinger mean-reversion signal: "
+                f"{snapshot.solana_alpha_signal}; ATR {snapshot.atr:.8f}."
+            ),
         ))
 
         no_trade_score = 30
@@ -230,6 +266,52 @@ class CryptoSniperAgent:
         variance = sum((price - avg) ** 2 for price in sample) / len(sample)
         normalized = math.sqrt(variance) / avg if avg else 0
         return self._clamp(normalized * 10_000)
+
+    def _bollinger_bands(
+        self, window: int = 20, deviations: float = 2.0
+    ) -> tuple[float, float, float]:
+        """Return lower, middle, and upper bands for the available closes."""
+        if not self.price_history:
+            return 0.0, 0.0, 0.0
+
+        sample = self.price_history[-window:]
+        middle = sum(sample) / len(sample)
+        variance = sum((price - middle) ** 2 for price in sample) / len(sample)
+        standard_deviation = math.sqrt(variance)
+        return (
+            middle - deviations * standard_deviation,
+            middle,
+            middle + deviations * standard_deviation,
+        )
+
+    def _estimate_atr(self, window: int = 14) -> float:
+        """Estimate ATR from closes until OHLC candles replace simulated data."""
+        sample = self.price_history[-(window + 1):]
+        if len(sample) < 2:
+            return 0.0
+
+        true_ranges = [
+            abs(sample[index] - sample[index - 1])
+            for index in range(1, len(sample))
+        ]
+        return sum(true_ranges) / len(true_ranges)
+
+    def _solana_alpha_signal(
+        self,
+        price: float,
+        rsi: float,
+        bb_lower: float,
+        bb_upper: float,
+        minimum_candles: int = 20,
+    ) -> str:
+        """Apply SolanaAlpha entry and exit conditions to the current snapshot."""
+        if len(self.price_history) < minimum_candles:
+            return "warmup"
+        if rsi < 35 and price < bb_lower:
+            return "enter_long"
+        if rsi > 70 or price > bb_upper:
+            return "exit_long"
+        return "hold"
 
     @staticmethod
     def _clamp(value: float) -> float:
