@@ -1,0 +1,3 @@
+# Optional dependencies for strategies/SolanaAlpha.py.
+# Freqtrade provides pandas and TA-Lib through its supported installation flow.
+freqtrade
