@@ -94,6 +94,29 @@ SKYFIRE_API_KEY=your_skyfire_api_key
 python -m core.orchestrator
 ```
 
+### Running the optional SolanaAlpha strategy
+
+`strategies/SolanaAlpha.py` is a standalone Freqtrade strategy and is not
+loaded by the Sentinel orchestrator. Install Freqtrade using its supported
+installation method, then copy the strategy into your Freqtrade user-data
+directory:
+
+```bash
+pip install -r requirements-freqtrade.txt
+cp strategies/SolanaAlpha.py /path/to/freqtrade/user_data/strategies/
+freqtrade backtesting --strategy SolanaAlpha --timeframe 5m
+```
+
+Backtest and dry-run the strategy before enabling live trading. Its configured
+hard stop is 10%, and it uses a trailing stop after reaching the configured
+profit offset.
+
+The same RSI/Bollinger entry and exit rules are integrated into the existing
+`CryptoSniperAgent` as the `solana_alpha` score. The native agent calculates
+its indicators from simulated close-price history, exposes the current signal
+in each logged market snapshot, and remains paper-trading only. The logic is
+symbol-agnostic and runs against whichever asset the orchestrator configures.
+
 ### Deploying to Railway.app
 
 1. Connect your GitHub repository to Railway
