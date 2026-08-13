@@ -86,6 +86,17 @@ SKYFIRE_API_KEY=your_skyfire_api_key
 3. Start a chat with your bot
 4. Get your chat ID using [@userinfobot](https://t.me/userinfobot)
 
+
+### Freqtrade SolanaAlpha Strategy
+
+A ready-to-use Freqtrade strategy has been added at `strategies/SolanaAlpha.py`. To use it with a Freqtrade user data directory, copy or symlink the file into your Freqtrade `user_data/strategies/` folder and install the optional dependencies:
+
+```bash
+pip install -r requirements-freqtrade.txt
+```
+
+The strategy uses a 5-minute timeframe, RSI, Bollinger Bands, ATR, a 10% hard stoploss, trailing stop protection, and quick ROI targets as provided.
+
 ## 🚀 Usage
 
 ### Running Locally
